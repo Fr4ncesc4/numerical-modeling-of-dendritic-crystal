@@ -1,0 +1,144 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+
+
+def Update(grid,beta,alpha):
+    NewGrid = grid
+    for i in range(1,N-1):
+        for j in range(1,N-1):
+                stato = classificazione(i,j,grid)
+                if(stato == 'Solid'):
+                    NewGrid[i,j] = 1
+                    continue
+                
+                sU = classificazione(i+1,j,grid)
+                sD = classificazione(i-1,j,grid)
+                sL = classificazione(i,j-1,grid)
+                sR = classificazione(i,j+1,grid)
+                s0 = classificazione(i,j,grid)
+                
+                if(s0 == 'QuasiSolid'):
+                    w0 = 0
+                else:
+                    w0 = 1
+                if (sU == 'Liquid'):
+                    wU = 1
+                else:
+                    wU = 0
+                if (sD == 'Liquid'):
+                    wD = 1
+                else:
+                    wD = 0
+                if (sL == 'Liquid'):
+                    wL = 1
+                else:
+                    wL = 0
+                if (sR == 'Liquid'):
+                    wR = 1
+                else:
+                    wR = 0
+                
+                D = -0.5 * grid[i,j] *w0 + 1./8 * (  wU * grid[i+1,j]
+                                                    + wD * grid[i-1,j]
+                                                    + wL * grid[i,j-1]
+                                                    + wR * grid[i,j+1]
+                                                   )  #termine di diffusione
+                    
+                if(stato == 'QuasiSolid'):
+                    NewGrid[i,j] = grid[i,j] + beta + alpha * D
+                if(stato == 'Liquid'):
+                    NewGrid[i,j] = grid[i,j]        + alpha * D       
+    grid = NewGrid
+    
+          
+
+def classificazione(X,Y,grid):
+    if (grid[X,Y] >= 0.99 ) : 
+        return 'Solid'
+    if ( X+1 != N and Y+1 != N and X != 0 and Y != 0):
+        pv1 = grid[X+1,Y] #Definisce i primi vicini della cella 
+        pv2 =grid[X-1,Y]
+        pv3 = grid[X,Y+1]
+        pv4 =grid[X,Y-1]
+    else: 
+        if (X+1 == N ):
+            pv1 = -1
+            pv2 =grid[X-1,Y]
+            if(Y+1 == N):
+                pv3 = -1
+            else:
+                pv3 = grid[X,Y+1]
+            if(Y == 0):
+                pv4 = -1
+            else:
+                pv4 =grid[X,Y-1]
+        if (Y+1 == N):
+            if (X+1==N):
+                pv1=-1
+            else:
+                pv1 = grid[X+1,Y]
+            if(X==0):
+                pv2=-1
+            else:
+                pv2 =grid[X-1,Y]
+            pv3 = -1
+            pv4 =grid[X,Y-1]
+        if (Y == 0):
+            if (X+1==N):
+                pv1=-1
+            else: 
+                pv1 = grid[X+1,Y]
+            if (X==0):
+                pv2=-1
+            else:
+                pv2 =grid[X-1,Y]
+            pv3 = grid[X,Y+1]
+            pv4 = -1
+        if (X==0): 
+            pv1 = grid[X+1,Y]
+            pv2 = -1
+            if (Y+1==N):
+                pv3=-1
+            else:
+                pv3 = grid[X,Y+1]
+            if(Y==0):
+                pv4=-1
+            else:
+                pv4 = grid[X,Y-1]
+        
+        
+    if (grid[X,Y]<1 and (pv1 >= 0.99 or pv2 >= 0.99 or pv3 >= 0.99 or pv4 >= 0.99) ) : 
+        return 'QuasiSolid'
+    
+    else : 
+        return 'Liquid'
+    
+#MAIN
+N = 299 #numero di pixel per asse della griglia
+#Ng = 1  #NUMERO INIZIALE DI GERMI DI CRESCITA
+T = 5000 #numero di step di aggiornamento, tempo fisico della simulazione
+dim = [N,N] #dimensioni della griglia di simulazione
+#parametri del modello 
+I0 = 0.3     #1
+beta = 0.0001 # 2
+alpha = 1.6  # 3
+grid = I0*np.ones(dim) #griglia di simulazione
+X0 = int( (N-1)/2 )    #inizializzazione
+Y0 = int( (N-1)/2 )
+grid[X0,Y0]=1
+alfa0 = 5.
+alfaT = 0.1
+gamma = 1./T*np.log(alfa0/alfaT)
+for t in range(T):
+    alfa = alfa0 * np.exp(-gamma*t)
+    Update(grid,beta,alpha)
+    if (t % 5 == 0):
+        print(t)
+
+    
+
+plt.figure(figsize=(10,10))
+plt.imshow(grid,cmap=cm.gray)
+plt.colorbar()
+plt.show()
